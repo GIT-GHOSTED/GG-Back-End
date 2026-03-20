@@ -3,9 +3,11 @@ import morgan from "morgan";
 import getUserFromToken from "#middleware/getUserFromToken";
 import usersRouter from "#api/users";
 import applicationsRouter from "#api/applications";
+import cors from "cors";
 
 const app = express();
 
+app.use(cors({ origin: "http://localhost:3000" }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan("dev"));
