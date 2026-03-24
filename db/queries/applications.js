@@ -3,11 +3,12 @@ import db from "#db/client";
 export async function createApplication(appObj) {
   const sql = `
   INSERT INTO applications
-    (user_id, company, role, status, job_url, date_applied, notes, contact_name, contact_email)
+    (user_id, company, role, status, job_url, date_applied, notes, contact_name, contact_email, followup_date)
   VALUES
-    ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+    ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
   RETURNING *;
   `;
+
   const {
     rows: [application],
   } = await db.query(sql, [
@@ -15,12 +16,14 @@ export async function createApplication(appObj) {
     appObj.company,
     appObj.role,
     appObj.status,
-    appObj.job_url,
-    appObj.date_applied,
+    appObj.jobUrl,
+    appObj.dateApplied,
     appObj.notes,
-    appObj.contact_name,
-    appObj.contact_email,
+    appObj.contactName,
+    appObj.contactEmail,
+    appObj.followUpDate,
   ]);
+
   return application;
 }
 
