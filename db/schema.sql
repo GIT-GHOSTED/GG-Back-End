@@ -22,6 +22,7 @@ CREATE TABLE applications (
   notes         TEXT,
   contact_name  VARCHAR(100),
   contact_email VARCHAR(255),
+  followup_date DATE,
   created_at    TIMESTAMP DEFAULT NOW(),
   updated_at    TIMESTAMP DEFAULT NOW()
 );
