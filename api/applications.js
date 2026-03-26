@@ -1,78 +1,114 @@
 import express from "express";
-const router = express.Router();
-export default router;
+import requireUser from "../middleware/requireUser.js";
+import requireBody from "../middleware/requireBody.js";
 
-import requireUser from "#middleware/requireUser";
 import {
   createApplication,
   getAllApplications,
   getApplicationById,
-  getApplicationByUserId,
+  getApplicationsByUserId,
   updateApplicationById,
   deleteApplicationById,
-} from "#db/queries/applications";
+} from "../db/queries/applications.js";
+
+const router = express.Router();
+const requireFields = [
+  "company",
+  "role",
+  "status",
+  "jobUrl",
+  "dateApplied",
+  "notes",
+  "contactName",
+  "contactEmail",
+  "followUpDate",
+];
 
 router.use(requireUser);
 
-router.post("/", async (req, res, next) => {
-  try {
-    const application = await createApplication(req.body);
-    res.status(201).json({ application });
-  } catch (err) {
-    next(err);
-  }
+router.param("id", async (req, res, next, id) => {
+  const application = await getApplicationById(id);
+  if (!application) return res.status(404).send("Application not found.");
+
+  if (application.user_id !== req.user.id)
+    return res
+      .status(403)
+      .send("You do not have permission to access this application.");
+
+  req.application = application;
+  next();
+});
+
+router.post("/", requireBody([requireFields]), async (req, res, next) => {
+  const {
+    company,
+    role,
+    status,
+    jobUrl,
+    dateApplied,
+    notes,
+    contactName,
+    contactEmail,
+    followUpDate,
+  } = req.body;
+  const application = await createApplication({
+    company,
+    role,
+    status,
+    jobUrl,
+    dateApplied,
+    notes,
+    contactName,
+    contactEmail,
+    followUpDate,
+  });
+  res.status(201).json({ application });
 });
 
 router.get("/", async (req, res, next) => {
-  try {
-    const applications = await getAllApplications();
-    res.json({ applications });
-  } catch (err) {
-    next(err);
-  }
+  const applications = await getAllApplications();
+  res.json({ applications });
 });
 
 router.get("/:id", async (req, res, next) => {
-  try {
-    const application = await getApplicationById(req.params.id);
-    if (!application) {
-      return res.status(404).json({ error: "Application not found" });
-    }
-    res.json({ application });
-  } catch (err) {
-    next(err);
-  }
+  const application = await getApplicationById(req.params.id);
+  res.json({ application });
 });
 
 router.get("/user/:userId", async (req, res, next) => {
-  try {
-    const applications = await getApplicationByUserId(req.params.userId);
-    res.json({ applications });
-  } catch (err) {
-    next(err);
-  }
+  const applications = await getApplicationsByUserId(req.params.userId);
+  res.json({ applications });
 });
 
-router.put("/:id", async (req, res, next) => {
-  try {
-    const application = await updateApplicationById(req.params.id, req.body);
-    if (!application) {
-      return res.status(404).json({ error: "Application not found" });
-    }
-    res.json({ application });
-  } catch (err) {
-    next(err);
-  }
+router.put("/:id", requireBody([requireFields]), async (req, res, next) => {
+  const {
+    company,
+    role,
+    status,
+    jobUrl,
+    dateApplied,
+    notes,
+    contactName,
+    contactEmail,
+    followUpDate,
+  } = req.body;
+  const updatedApp = await updateApplicationById(req.params.id, {
+    company,
+    role,
+    status,
+    jobUrl,
+    dateApplied,
+    notes,
+    contactName,
+    contactEmail,
+    followUpDate,
+  });
+  res.json({ updatedApp });
 });
 
 router.delete("/:id", async (req, res, next) => {
-  try {
-    const application = await deleteApplicationById(req.params.id);
-    if (!application) {
-      return res.status(404).json({ error: "Application not found" });
-    }
-    res.json({ application });
-  } catch (err) {
-    next(err);
-  }
+  const deletedApp = await deleteApplicationById(req.params.id);
+  res.json({ deletedApp });
 });
+
+export default router;

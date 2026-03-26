@@ -1,6 +1,6 @@
-import db from "#db/client";
+import db from "../client.js";
 
-export async function createApplication(appObj) {
+export async function createApplication(app) {
   const sql = `
   INSERT INTO applications
     (user_id, company, role, status, job_url, date_applied, notes, contact_name, contact_email, followup_date)
@@ -12,16 +12,16 @@ export async function createApplication(appObj) {
   const {
     rows: [application],
   } = await db.query(sql, [
-    appObj.user_id,
-    appObj.company,
-    appObj.role,
-    appObj.status,
-    appObj.jobUrl,
-    appObj.dateApplied,
-    appObj.notes,
-    appObj.contactName,
-    appObj.contactEmail,
-    appObj.followUpDate,
+    app.userId,
+    app.company,
+    app.role,
+    app.status,
+    app.jobUrl,
+    app.dateApplied,
+    app.notes,
+    app.contactName,
+    app.contactEmail,
+    app.followUpDate,
   ]);
 
   return application;
@@ -61,7 +61,7 @@ export async function deleteApplicationById(id) {
   return application;
 }
 
-export async function updateApplicationById(id, appObj) {
+export async function updateApplicationById(id, app) {
   const sql = `
   UPDATE applications
   SET user_id = $2, company = $3, role = $4, status = $5, job_url = $6, date_applied = $7, notes = $8, contact_name = $9, contact_email = $10
@@ -72,20 +72,20 @@ export async function updateApplicationById(id, appObj) {
     rows: [application],
   } = await db.query(sql, [
     id,
-    appObj.user_id,
-    appObj.company,
-    appObj.role,
-    appObj.status,
-    appObj.job_url,
-    appObj.date_applied,
-    appObj.notes,
-    appObj.contact_name,
-    appObj.contact_email,
+    app.userId,
+    app.company,
+    app.role,
+    app.status,
+    app.jobUrl,
+    app.dateApplied,
+    app.notes,
+    app.contactName,
+    app.contactEmail,
   ]);
   return application;
 }
 
-export async function getApplicationByUserId(id) {
+export async function getApplicationsByUserId(id) {
   const sql = `
   SELECT *
   FROM applications
