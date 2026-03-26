@@ -62,9 +62,15 @@ export async function deleteApplicationById(id) {
 }
 
 export async function updateApplicationById(id, app) {
+  // const sql = `
+  // UPDATE applications
+  // SET user_id = $2, company = $3, role = $4, status = $5, job_url = $6, date_applied = $7, notes = $8, contact_name = $9, contact_email = $10
+  // WHERE id = $1
+  // RETURNING *
+  // `;
   const sql = `
   UPDATE applications
-  SET user_id = $2, company = $3, role = $4, status = $5, job_url = $6, date_applied = $7, notes = $8, contact_name = $9, contact_email = $10
+  SET user_id = $2, company = $3, role = $4, status = $5, date_applied = $6, notes = $7
   WHERE id = $1
   RETURNING *
   `;
@@ -76,11 +82,11 @@ export async function updateApplicationById(id, app) {
     app.company,
     app.role,
     app.status,
-    app.jobUrl,
+    // app.jobUrl,
     app.dateApplied,
     app.notes,
-    app.contactName,
-    app.contactEmail,
+    // app.contactName,
+    // app.contactEmail,
   ]);
   return application;
 }

@@ -26,17 +26,9 @@ const requireFields = [
 
 router.use(requireUser);
 
-router.param("id", async (req, res, next, id) => {
-  const application = await getApplicationById(id);
-  if (!application) return res.status(404).send("Application not found.");
-
-  if (application.user_id !== req.user.id)
-    return res
-      .status(403)
-      .send("You do not have permission to access this application.");
-
-  req.application = application;
-  next();
+router.get("/user/:userId", async (req, res, next) => {
+  const applications = await getApplicationsByUserId(req.params.userId);
+  res.json({ applications });
 });
 
 router.post("/", requireBody(requireFields), async (req, res, next) => {
@@ -51,23 +43,34 @@ router.post("/", requireBody(requireFields), async (req, res, next) => {
     contactEmail,
     followUpDate,
   } = req.body;
+  console.log("req.user.id", req.user.id);
   const application = await createApplication({
-    company,
-    role,
-    status,
-    jobUrl,
-    dateApplied,
-    notes,
-    contactName,
-    contactEmail,
-    followUpDate,
+    userId: req.user.id,
+    company: company,
+    role: role,
+    status: status,
+    jobUrl: jobUrl,
+    dateApplied: dateApplied,
+    notes: notes,
+    contactName: contactName,
+    contactEmail: contactEmail,
+    followUpDate: followUpDate,
   });
   res.status(201).json({ application });
 });
 
-router.get("/", async (req, res, next) => {
-  const applications = await getAllApplications();
-  res.json({ applications });
+router.param("id", async (req, res, next, id) => {
+  const application = await getApplicationById(id);
+  console.log("IN HERE", application.user_id, req.user.id); // delete later
+  if (!application) return res.status(404).send("Application not found.");
+
+  if (application.user_id !== req.user.id)
+    return res
+      .status(403)
+      .send("You do not have permission to access this application.");
+
+  req.application = application;
+  next();
 });
 
 router.get("/:id", async (req, res, next) => {
@@ -75,36 +78,40 @@ router.get("/:id", async (req, res, next) => {
   res.json({ application });
 });
 
-router.get("/user/:userId", async (req, res, next) => {
-  const applications = await getApplicationsByUserId(req.params.userId);
+router.get("/", async (req, res, next) => {
+  const applications = await getAllApplications();
   res.json({ applications });
 });
 
-router.put("/:id", requireBody(requireFields), async (req, res, next) => {
-  const {
-    company,
-    role,
-    status,
-    jobUrl,
-    dateApplied,
-    notes,
-    contactName,
-    contactEmail,
-    followUpDate,
-  } = req.body;
-  const updatedApp = await updateApplicationById(req.params.id, {
-    company,
-    role,
-    status,
-    jobUrl,
-    dateApplied,
-    notes,
-    contactName,
-    contactEmail,
-    followUpDate,
-  });
-  res.json({ updatedApp });
-});
+router.put(
+  "/:id",
+  requireBody(["company", "role", "status", "dateApplied", "notes"]),
+  async (req, res, next) => {
+    const {
+      company,
+      role,
+      status,
+      // jobUrl,
+      dateApplied,
+      notes,
+      // contactName,
+      // contactEmail,
+      // followUpDate,
+    } = req.body;
+    const updatedApp = await updateApplicationById(req.params.id, {
+      company: company,
+      role: role,
+      status: status,
+      // jobUrl: jobUrl,
+      dateApplied: dateApplied,
+      notes: notes,
+      // contactName: contactName,
+      // contactEmail: contactEmail,
+      // followUpDate: followUpDate,
+    });
+    res.json({ updatedApp });
+  },
+);
 
 router.delete("/:id", async (req, res, next) => {
   const deletedApp = await deleteApplicationById(req.params.id);
