@@ -61,7 +61,7 @@ router.post("/", requireBody(requireFields), async (req, res, next) => {
 
 router.param("id", async (req, res, next, id) => {
   const application = await getApplicationById(id);
-  console.log("IN HERE", application.user_id, req.user.id); // delete later
+
   if (!application) return res.status(404).send("Application not found.");
 
   if (application.user_id !== req.user.id)
@@ -73,14 +73,13 @@ router.param("id", async (req, res, next, id) => {
   next();
 });
 
-router.get("/:id", async (req, res, next) => {
-  const application = await getApplicationById(req.params.id);
-  res.json({ application });
+router.get("/", async (req, res, next) => {
+  const applications = await getApplicationsByUserId(req.user.id);
+  res.json({ applications });
 });
 
-router.get("/", async (req, res, next) => {
-  const applications = await getAllApplications();
-  res.json({ applications });
+router.get("/:id", async (req, res, next) => {
+  res.json({ application: req.application });
 });
 
 router.put(

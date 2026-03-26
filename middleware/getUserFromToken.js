@@ -10,6 +10,9 @@ export default async function getUserFromToken(req, res, next) {
   try {
     const { id } = verifyToken(token);
     const user = await getUserById(id);
+    // If the user no longer exists (e.g. after a db:reset), treat as unauthenticated.
+    if (!user)
+      return res.status(401).send("Session expired. Please log in again.");
     req.user = user;
     next();
   } catch (e) {

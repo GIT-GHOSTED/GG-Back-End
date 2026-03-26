@@ -37,7 +37,7 @@ export async function getAllApplications() {
   return applications;
 }
 
-export async function getApplicationById(id) {
+export async function getApplicationById(appId) {
   const sql = `
   SELECT *
   FROM applications
@@ -45,11 +45,11 @@ export async function getApplicationById(id) {
   `;
   const {
     rows: [application],
-  } = await db.query(sql, [id]);
+  } = await db.query(sql, [appId]);
   return application;
 }
 
-export async function deleteApplicationById(id) {
+export async function deleteApplicationById(appId) {
   const sql = `
   DELETE FROM applications
   WHERE id = $1
@@ -57,11 +57,11 @@ export async function deleteApplicationById(id) {
   `;
   const {
     rows: [application],
-  } = await db.query(sql, [id]);
+  } = await db.query(sql, [appId]);
   return application;
 }
 
-export async function updateApplicationById(id, app) {
+export async function updateApplicationById(appId, app) {
   // const sql = `
   // UPDATE applications
   // SET user_id = $2, company = $3, role = $4, status = $5, job_url = $6, date_applied = $7, notes = $8, contact_name = $9, contact_email = $10
@@ -77,7 +77,7 @@ export async function updateApplicationById(id, app) {
   const {
     rows: [application],
   } = await db.query(sql, [
-    id,
+    appId,
     app.userId,
     app.company,
     app.role,
@@ -91,13 +91,13 @@ export async function updateApplicationById(id, app) {
   return application;
 }
 
-export async function getApplicationsByUserId(id) {
+export async function getApplicationsByUserId(userId) {
   const sql = `
   SELECT *
   FROM applications
   WHERE user_id = $1
   ORDER BY created_at DESC
   `;
-  const { rows: applications } = await db.query(sql, [id]);
+  const { rows: applications } = await db.query(sql, [userId]);
   return applications;
 }
