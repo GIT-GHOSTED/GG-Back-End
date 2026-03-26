@@ -39,7 +39,7 @@ router.param("id", async (req, res, next, id) => {
   next();
 });
 
-router.post("/", requireBody([requireFields]), async (req, res, next) => {
+router.post("/", requireBody(requireFields), async (req, res, next) => {
   const {
     company,
     role,
@@ -80,7 +80,7 @@ router.get("/user/:userId", async (req, res, next) => {
   res.json({ applications });
 });
 
-router.put("/:id", requireBody([requireFields]), async (req, res, next) => {
+router.put("/:id", requireBody(requireFields), async (req, res, next) => {
   const {
     company,
     role,
