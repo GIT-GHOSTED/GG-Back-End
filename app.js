@@ -7,7 +7,34 @@ import applicationsRouter from "./api/applications.js";
 
 const app = express();
 
-app.use(cors({ origin: /localhost/ }));
+const allowedOrigins = [
+  "https://git-ghosted.netlify.app",
+  process.env.FRONTEND_URL,
+].filter(Boolean);
+
+const corsOptions = {
+  origin(origin, callback) {
+    if (!origin) return callback(null, true);
+
+    const isLocalhost = /localhost/.test(origin);
+    const isAllowed = allowedOrigins.includes(origin);
+
+    let isNetlify = false;
+    try {
+      const hostname = new URL(origin).hostname;
+      isNetlify = hostname.endsWith(".netlify.app");
+    } catch {
+      isNetlify = false;
+    }
+
+    if (isLocalhost || isAllowed || isNetlify) return callback(null, true);
+
+    return callback(new Error("Not allowed by CORS"));
+  },
+};
+
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan("dev"));
