@@ -16,14 +16,7 @@ const app = express();
 //   "https://git-ghosted.netlify.app/applications/:id/edit",
 // ];
 
-app.use(
-  cors({
-    origin: "https://git-ghosted.netlify.app",
-    methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-    credentials: true,
-  }),
-);
+app.use(cors({ origin: "https://git-ghosted.netlify.app" }));
 
 // app.use(cors({ origin: allowedOrigins }));
 app.use(express.json());
