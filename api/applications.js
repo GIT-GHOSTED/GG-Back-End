@@ -86,27 +86,13 @@ router.put(
   "/:id",
   requireBody(["company", "role", "status", "dateApplied", "notes"]),
   async (req, res, next) => {
-    const {
-      company,
-      role,
-      status,
-      // jobUrl,
-      dateApplied,
-      notes,
-      // contactName,
-      // contactEmail,
-      // followUpDate,
-    } = req.body;
+    const { company, role, status, dateApplied, notes } = req.body;
     const updatedApp = await updateApplicationById(req.params.id, {
       company: company,
       role: role,
       status: status,
-      // jobUrl: jobUrl,
       dateApplied: dateApplied,
       notes: notes,
-      // contactName: contactName,
-      // contactEmail: contactEmail,
-      // followUpDate: followUpDate,
     });
     res.json({ updatedApp });
   },
