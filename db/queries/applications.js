@@ -64,7 +64,7 @@ export async function deleteApplicationById(appId) {
 export async function updateApplicationById(appId, app) {
   const sql = `
   UPDATE applications
-  SET COMPANY = $2, role = $3, status = $4, date_applied = $5, notes = $6 
+  SET COMPANY = $2, role = $3, status = $4, date_applied = $5, notes = $6, contact_name = $7, contact_email = $8, followup_date = $9 
   WHERE id = $1
   RETURNING *
   `;
@@ -77,6 +77,9 @@ export async function updateApplicationById(appId, app) {
     app.status,
     app.dateApplied,
     app.notes,
+    app.contactName,
+    app.contactEmail,
+    app.followUpDate,
   ]);
   return application;
 }

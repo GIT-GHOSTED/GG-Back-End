@@ -10,7 +10,7 @@ CREATE TABLE users (
   created_at  TIMESTAMP DEFAULT NOW()
 );
 
-CREATE TYPE application_status AS ENUM ('applied', 'interview', 'offer', 'rejected', 'ghosted');
+CREATE TYPE application_status AS ENUM ('applied', 'interviewed', 'offered', 'rejected', 'ghosted');
 
 -- Applications table
 CREATE TABLE applications (
