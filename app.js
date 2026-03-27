@@ -24,7 +24,6 @@ app.use(
     credentials: true,
   }),
 );
-app.options("*", cors()); // ensure preflight responses include CORS headers
 
 // app.use(cors({ origin: allowedOrigins }));
 app.use(express.json());
