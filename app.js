@@ -14,11 +14,6 @@ app.use(morgan("dev"));
 
 app.use(getUserFromToken);
 
-// change later if needed
-app.get("/", (req, res, next) => {
-  res.send("It is working");
-});
-
 app.use("/applications", applicationsRouter);
 app.use("/users", usersRouter);
 
