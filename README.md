@@ -1,10 +1,10 @@
-# 📋 Job Application Tracker
+# Job Application Tracker (Backend)
 
-A full stack web application that helps job seekers organize and manage their job search. Track applications, monitor statuses, log interviews, and visualize your progress — all in one place.
+A Node.js + Express backend API for a job application tracking system. This repo provides secure user authentication, user-specific application management, and PostgreSQL persistence.
 
 ---
 
-## 🗂️ Table of Contents
+## Table of Contents
 
 - [Project Overview](#project-overview)
 - [Features](#features)
@@ -12,269 +12,189 @@ A full stack web application that helps job seekers organize and manage their jo
 - [Architecture](#architecture)
 - [Database Schema](#database-schema)
 - [API Endpoints](#api-endpoints)
-- [Frontend Pages & Components](#frontend-pages--components)
-- [Getting Started](#getting-started)
-- [Project Roadmap](#project-roadmap)
-- [Stretch Goals](#stretch-goals)
+- [Project Setup](#project-setup)
+- [Scripts](#scripts)
 
 ---
 
 ## Project Overview
 
-The Job Application Tracker is a personal CRM (Customer Relationship Management) tool designed specifically for job seekers. Users can create an account, log job applications, track their status through the hiring pipeline, and gain insight into their job search through a visual dashboard.
+This repository is the backend for the Job Application Tracker project. It exposes REST endpoints that support:
 
-**Target User:** Anyone actively job hunting who wants a better system than spreadsheets or sticky notes.
+- user registration/login with hashed passwords and JWT
+- authenticated CRUD operations on job applications
+- request-level user authorization (each user manages only their own applications)
+
+**Repo focus:** Backend API (no frontend in this repository).
 
 ---
 
 ## Features
 
-- **User Authentication** — Secure sign-up, login, and logout with hashed passwords and JWT sessions
-- **Application Management** — Create, view, edit, and delete job applications
-- **Status Tracking** — Track each application through stages: `Saved → Applied → Phone Screen → Interview → Offer → Rejected`
-- **Notes & Contacts** — Add notes and recruiter/contact info to each application
-- **Dashboard** — Visual summary of application statuses and activity over time
-- **Search & Filter** — Filter applications by status, company, or date applied
+- User signup and login with JWT
+- Password hashing with bcrypt
+- Middleware-based auth flow:
+  - `getUserFromToken` reads `Authorization: Bearer <token>`
+  - `requireUser` enforces authenticated access
+- CRUD routes for job applications
+- User-scoped data access by default
+- SQL error handling for invalid input and constraint violations
+- Database seeding with realistic fake data
 
 ---
 
 ## Tech Stack
 
-| Layer | Technology |
-|---|---|
-| Frontend | React (with React Router, Axios) |
-| Backend | Node.js, Express.js |
-| Database | PostgreSQL |
-| Auth | JSON Web Tokens (JWT), bcrypt |
-| Styling | CSS Modules or Tailwind CSS |
-| Dev Tools | Nodemon, dotenv, pgAdmin |
+| Layer         | Technology                   |
+| ------------- | ---------------------------- |
+| Runtime       | Node.js (ESM module)         |
+| Web framework | Express 5                    |
+| Database      | PostgreSQL                   |
+| ORM / driver  | pg native client             |
+| Auth          | JWT (`jsonwebtoken`), bcrypt |
+| Logging       | morgan                       |
+| Testing       | vitest, supertest            |
+| Fixtures      | @faker-js/faker              |
 
 ---
 
 ## Architecture
 
-This project is structured as a **monorepo** — both the frontend and backend live in a single Git repository, with a root-level `package.json` that coordinates running them together.
-
 ```
-Git-Ghosted/                      ← single Git repo
-├── client/                       # React frontend
-│   ├── package.json
-│   ├── public/
-│   └── src/
-│       ├── components/           # Reusable UI components
-│       ├── pages/                # Route-level page components
-│       ├── context/              # Auth context / global state
-│       ├── services/             # Axios API call functions
-│       └── App.jsx
-│
-├── server/                       # Node.js / Express backend
-│   ├── package.json
-│   ├── db/
-│   │   ├── index.js              # PostgreSQL connection pool
-│   │   └── schema.sql            # Database schema
-│   ├── middleware/
-│   │   └── auth.js               # JWT verification middleware
-│   ├── routes/
-│   │   ├── auth.js               # /api/auth routes
-│   │   └── applications.js       # /api/applications routes
-│   └── server.js
-│
-├── package.json                  # Root: runs both apps via concurrently
-├── .gitignore
-├── .env                          # Root-level env vars (gitignored)
+GG-Back-End/
+├── api/
+│   ├── applications.js
+│   └── users.js
+├── db/
+│   ├── client.js
+│   ├── seed.js
+│   ├── schema.sql
+│   └── queries/
+│       ├── applications.js
+│       └── users.js
+├── middleware/
+│   ├── getUserFromToken.js
+│   ├── requireBody.js
+│   └── requireUser.js
+├── utils/
+│   └── jwt.js
+├── app.js
+├── server.js
+├── package.json
 └── README.md
 ```
 
-### Root `package.json`
+### Core flow
 
-The root package uses `concurrently` to boot both the frontend and backend with a single command:
-
-```json
-{
-  "scripts": {
-    "dev": "concurrently \"npm run dev --prefix server\" \"npm start --prefix client\"",
-    "install:all": "npm install && npm install --prefix server && npm install --prefix client"
-  },
-  "devDependencies": {
-    "concurrently": "^8.0.0"
-  }
-}
-```
+1. `server.js` connects to database and starts Express app
+2. `app.js` loads global middleware and routes
+3. `getUserFromToken` loads user if JWT is valid
+4. `requireUser` protects application routes
+5. `/users` handles register/login
+6. `/applications` handles user application CRUD
 
 ---
 
 ## Database Schema
 
+This project uses a custom Postgres enum for application status.
+
 ```sql
--- Users table
+DROP TABLE IF EXISTS applications CASCADE;
+DROP TYPE IF EXISTS application_status;
+DROP TABLE IF EXISTS users CASCADE;
+
 CREATE TABLE users (
   id          SERIAL PRIMARY KEY,
-  email       VARCHAR(255) UNIQUE NOT NULL,
-  password    VARCHAR(255) NOT NULL,
-  name        VARCHAR(100),
+  email       VARCHAR(64) UNIQUE NOT NULL,
+  password    VARCHAR(64) NOT NULL,
   created_at  TIMESTAMP DEFAULT NOW()
 );
 
--- Applications table
+CREATE TYPE application_status AS ENUM ('applied', 'interview', 'offer', 'rejected', 'ghosted');
+
 CREATE TABLE applications (
   id            SERIAL PRIMARY KEY,
   user_id       INTEGER REFERENCES users(id) ON DELETE CASCADE,
-  company       VARCHAR(255) NOT NULL,
-  role          VARCHAR(255) NOT NULL,
-  status        VARCHAR(50) DEFAULT 'Saved',
+  company       VARCHAR(32) NOT NULL,
+  role          VARCHAR(32) NOT NULL,
+  status        application_status DEFAULT 'applied',
   job_url       TEXT,
   date_applied  DATE,
   notes         TEXT,
-  contact_name  VARCHAR(100),
-  contact_email VARCHAR(255),
+  contact_name  VARCHAR(64),
+  contact_email VARCHAR(64),
+  followup_date DATE,
   created_at    TIMESTAMP DEFAULT NOW(),
   updated_at    TIMESTAMP DEFAULT NOW()
 );
 ```
 
-**Status values (enforced in application logic):**
-`Saved`, `Applied`, `Phone Screen`, `Interview`, `Offer`, `Rejected`
-
 ---
 
 ## API Endpoints
 
-### Auth Routes — `/api/auth`
+### Auth — `/users`
 
-| Method | Endpoint | Description | Auth Required |
-|---|---|---|---|
-| POST | `/api/auth/register` | Register a new user | No |
-| POST | `/api/auth/login` | Login and receive JWT | No |
-| GET | `/api/auth/me` | Get current logged-in user | Yes |
+| Method | Endpoint          | Description                   | Auth Required |
+| ------ | ----------------- | ----------------------------- | ------------- |
+| POST   | `/users/register` | Register new user, return JWT | No            |
+| POST   | `/users/login`    | Sign in, return JWT           | No            |
 
-### Application Routes — `/api/applications`
+### Applications — `/applications` (requires auth via `Authorization: Bearer <token>`)
 
-| Method | Endpoint | Description | Auth Required |
-|---|---|---|---|
-| GET | `/api/applications` | Get all applications for the logged-in user | Yes |
-| GET | `/api/applications/:id` | Get a single application by ID | Yes |
-| POST | `/api/applications` | Create a new application | Yes |
-| PUT | `/api/applications/:id` | Update an existing application | Yes |
-| DELETE | `/api/applications/:id` | Delete an application | Yes |
-
----
-
-## Frontend Pages & Components
-
-### Pages
-- **`/`** — Landing / marketing page with login and signup links
-- **`/register`** — Sign-up form
-- **`/login`** — Login form
-- **`/dashboard`** — Overview stats and recent applications
-- **`/applications`** — Full list of applications with filters
-- **`/applications/new`** — Form to add a new application
-- **`/applications/:id`** — Detail view for a single application
-- **`/applications/:id/edit`** — Edit form for an application
-
-### Key Components
-- `Navbar` — Navigation bar with logout button
-- `ApplicationCard` — Summary card used in the list view
-- `ApplicationForm` — Shared form for create and edit
-- `StatusBadge` — Color-coded badge showing current status
-- `StatusPipeline` — Visual pipeline showing progress through hiring stages
-- `DashboardChart` — Bar or pie chart showing application breakdown by status
-- `PrivateRoute` — Wrapper component that redirects unauthenticated users
+| Method | Endpoint                     | Description                                                |
+| ------ | ---------------------------- | ---------------------------------------------------------- |
+| GET    | `/applications`              | Get current user's applications                            |
+| GET    | `/applications/:id`          | Get application by ID (ownership enforced)                 |
+| GET    | `/applications/user/:userId` | Get applications by user ID (protected, same user allowed) |
+| POST   | `/applications`              | Create application (with required fields)                  |
+| PUT    | `/applications/:id`          | Update application fields                                  |
+| DELETE | `/applications/:id`          | Delete application                                         |
 
 ---
 
-## Getting Started
+## Project Setup
 
-### Prerequisites
-- Node.js (v18+)
-- PostgreSQL (v14+)
-- npm
+### Requirements
 
-### 1. Clone the Repository
+- Node.js >=22
+- PostgreSQL
+- `.env` with:
+  - `DATABASE_URL` (e.g. `postgresql://user:pass@localhost:5432/git_ghosted`)
+  - `JWT_SECRET`
+  - optional `PORT` (default 3000)
+
+### Install
+
 ```bash
-git clone https://github.com/michaelflorentino4444/Git-Ghosted.git
-cd Git-Ghosted
+npm install
 ```
 
-### 2. Install All Dependencies
-From the root of the repo, install dependencies for the root, server, and client in one command:
+### Database initialize
+
 ```bash
-npm run install:all
+npm run db:schema
+npm run db:seed
 ```
 
-Or install them individually:
-```bash
-npm install                      # root (concurrently)
-npm install --prefix server      # backend
-npm install --prefix client      # frontend
-```
+### Run
 
-### 3. Set Up the Database
-```bash
-psql -U postgres
-CREATE DATABASE git_ghosted;
-\c git_ghosted
-\i server/db/schema.sql
-```
-
-### 4. Configure Environment Variables
-Create a `.env` file in the root directory:
-```
-PORT=5000
-DATABASE_URL=postgresql://postgres:yourpassword@localhost:5432/job_tracker
-JWT_SECRET=your_jwt_secret_here
-```
-
-### 5. Run the App
-From the root of the repo, start both the frontend and backend together:
 ```bash
 npm run dev
 ```
 
-The app will be available at `http://localhost:3000`, with the API running on `http://localhost:5000`.
+Server listens on `http://localhost:3000` unless `PORT` is set.
 
 ---
 
-## Project Roadmap
+## Scripts
 
-### Phase 1 — Foundation
-- [ ] Set up project structure and repositories
-- [ ] Initialize Express server with PostgreSQL connection
-- [ ] Create database schema and run migrations
-- [ ] Implement user registration and login (JWT auth)
-- [ ] Build auth-protected API routes for applications (full CRUD)
-
-### Phase 2 — Frontend Core
-- [ ] Set up React app with React Router
-- [ ] Build Login and Register pages
-- [ ] Implement auth context for global user state
-- [ ] Build Applications list page with cards
-- [ ] Build Application create/edit form
-- [ ] Build Application detail page
-
-### Phase 3 — Polish & Dashboard
-- [ ] Build Dashboard page with status summary counts
-- [ ] Add status pipeline / progress visualization
-- [ ] Add search and filter functionality
-- [ ] Add form validation and user-friendly error messages
-- [ ] Responsive design / mobile-friendly layout
-
-### Phase 4 — Testing & Deployment
-- [ ] Manual end-to-end testing of all features
-- [ ] Deploy backend to Render or Railway
-- [ ] Deploy frontend to Netlify or Vercel
-- [ ] Connect production frontend to production API
-- [ ] Write final README with live demo link
-
----
-
-## Stretch Goals
-
-These are features to add if time permits:
-
-- **Follow-up Reminders** — Set a reminder date per application and show overdue items
-- **Timeline / Activity Log** — Log every status change with a timestamp
-- **Resume Uploads** — Attach a resume file to each application
-- **OAuth Login** — Sign in with Google
-- **Email Notifications** — Get notified when a follow-up is due
-- **Export to CSV** — Download your applications as a spreadsheet
-- **Dark Mode** — Theme toggle for the UI
+| Command             | Purpose                           |
+| ------------------- | --------------------------------- |
+| `npm start`         | Run production server with `.env` |
+| `npm run dev`       | Run server with watch mode        |
+| `npm run test`      | Run tests with vitest             |
+| `npm run db:schema` | Apply schema to database          |
+| `npm run db:seed`   | Seed database with sample data    |
+| `npm run db:reset`  | Reset (schema + seed)             |
