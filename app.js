@@ -6,17 +6,8 @@ import usersRouter from "./api/users.js";
 import applicationsRouter from "./api/applications.js";
 
 const app = express();
-const allowedOrigins = [
-  "https://git-ghosted.netlify.app",
-  "https://git-ghosted.netlify.app/register",
-  "https://git-ghosted.netlify.app/login",
-  "https://git-ghosted.netlify.app/dashboard",
-  "https://git-ghosted.netlify.app/applications",
-  "https://git-ghosted.netlify.app/applications/:id",
-  "https://git-ghosted.netlify.app/applications/:id/edit",
-];
 
-app.use(cors({ origin: allowedOrigins }));
+app.use(cors({ origin: "https://git-ghosted.netlify.app" }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan("dev"));
