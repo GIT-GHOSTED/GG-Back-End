@@ -7,7 +7,7 @@ import applicationsRouter from "./api/applications.js";
 
 const app = express();
 
-app.use(cors({ origin: "https://git-ghosted.netlify.app" }));
+app.use(cors({ origin: "https://git-ghosted0.netlify.app" }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan("dev"));
